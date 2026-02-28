@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>5G Use-Case Framework UI</title>
+  <link rel="stylesheet" href="./styles.css"/>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="dot"></div>
+      <div>
+        <div class="title">5G Use-Case Framework</div>
+        <div class="subtitle">Open5GS + UERANSIM • use-case selection → slicing → verification</div>
+      </div>
+    </div>
+
+    <div class="api-box">
+      <label>API Base</label>
+      <input id="apiBase" value="http://localhost:8000" />
+      <button id="btnSaveApi">Save</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="sidebar">
+      <button class="nav active" data-tab="usecases">Use Cases</button>
+      <button class="nav" data-tab="topology">Network View</button>
+      <button class="nav" data-tab="transport">Transport</button>
+      <button class="nav" data-tab="control">Control</button>
+      <button class="nav" data-tab="logs">Logs</button>
+    </aside>
+
+    <section class="content">
+
+      <!-- Use Cases -->
+      <section class="tab" id="tab-usecases">
+        <h2>Use Case Selector</h2>
+
+        <div class="grid">
+          <div class="card">
+            <h3>Select use cases</h3>
+
+            <!-- Active profile -->
+            <div class="profile" id="profileBox">
+              <div class="profile-h">Active Slice Profile</div>
+              <div class="profile-body" id="profileBody">
+                <div class="muted">No profile yet. Click “Activate selected”.</div>
+              </div>
+            </div>
+
+            <div class="uc-list">
+              <label class="uc">
+                <input type="checkbox" id="uc-embb" checked />
+                <div class="uc-body">
+                  <div class="uc-title">Mobile Broadband (eMBB)</div>
+                  <div class="uc-meta">Slice: SST 1 / SD 000001 • Expected pool: 10.45.0.*</div>
+                </div>
+              </label>
+
+              <label class="uc">
+                <input type="checkbox" id="uc-urllc" />
+                <div class="uc-body">
+                  <div class="uc-title">Connected Cars (URLLC)</div>
+                  <div class="uc-meta">Slice: SST 1 / SD 000002 • Expected pool: 10.46.0.*</div>
+                </div>
+              </label>
+
+              <label class="uc">
+                <input type="checkbox" id="uc-mmtc" />
+                <div class="uc-body">
+                  <div class="uc-title">Industrial IoT (mMTC)</div>
+                  <div class="uc-meta">Slice: SST 1 / SD 000003 • Expected pool: 10.47.0.*</div>
+                </div>
+              </label>
+            </div>
+
+            <div class="row">
+              <label class="field">
+                <span>Transport</span>
+                <select id="transportMode">
+                  <option value="auto">auto</option>
+                  <option value="on">NAT on</option>
+                  <option value="off">NAT off</option>
+                </select>
+              </label>
+
+              <label class="field">
+                <span>Ping target</span>
+                <input id="pingTarget" value="8.8.8.8"/>
+              </label>
+            </div>
+
+            <details class="details">
+              <summary>Advanced verification options</summary>
+              <div class="grid-advanced">
+                <div class="adv">
+                  <div class="adv-h">URLLC ping</div>
+                  <div class="row">
+                    <label class="field"><span>count</span><input id="urllcCount" value="50"/></label>
+                    <label class="field"><span>interval</span><input id="urllcInterval" value="0.2"/></label>
+                  </div>
+                </div>
+
+                <div class="adv">
+                  <div class="adv-h">mMTC periodic ping</div>
+                  <div class="row">
+                    <label class="field"><span>count</span><input id="mmtcCount" value="10"/></label>
+                    <label class="field"><span>interval</span><input id="mmtcInterval" value="2"/></label>
+                  </div>
+                </div>
+
+                <div class="adv">
+                  <div class="adv-h">eMBB iperf (optional)</div>
+                  <div class="row">
+                    <label class="field"><span>iperf server</span><input id="embbIperfServer" placeholder="optional"/></label>
+                    <label class="field"><span>duration</span><input id="embbDuration" value="10"/></label>
+                  </div>
+                </div>
+              </div>
+            </details>
+
+            <div class="row">
+              <button id="btnActivateUC">Activate selected</button>
+              <button id="btnVerifyUC" class="secondary">Verify selected</button>
+              <button id="btnVerifyAllUC" class="secondary">Verify all</button>
+              <button id="btnStopNetwork" class="secondary danger">Stop network</button>
+            </div>
+
+            <!-- Dynamic node-chain flow -->
+            <div class="flowbox">
+              <div class="flow-h">Use Case Abstraction</div>
+              <div class="muted small">Use case → slice → network function path</div>
+              <div id="flows"></div>
+            </div>
+
+            <p class="hint">
+              “Activate” runs: start → provision relevant UEs → verify (per selected use case).
+              “Verify” runs verifiers only.
+            </p>
+          </div>
+
+          <div class="card">
+            <h3>Results</h3>
+
+            <div class="kpi-grid" id="ucKpis"></div>
+
+            <details class="details open">
+              <summary>Latest run output</summary>
+              <pre id="ucOut" class="pre"></pre>
+            </details>
+
+            <details class="details">
+              <summary>History (latest 20)</summary>
+              <div class="row">
+                <button id="btnLoadHistory" class="secondary">Refresh history</button>
+              </div>
+              <div id="historyList" class="history"></div>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      <!-- Network View -->
+      <section class="tab hidden" id="tab-topology">
+        <h2>Network View</h2>
+        <div class="card">
+          <div class="row">
+            <button id="btnTopology">Refresh</button>
+            <label class="field">
+              <span>Filter</span>
+              <select id="topoFilter">
+                <option value="all">All</option>
+                <option value="Core">Core</option>
+                <option value="RAN">RAN</option>
+                <option value="UE">UE</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="table-wrap">
+            <table class="tbl">
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Component</th>
+                  <th>Status</th>
+                  <th>Open5GS IP</th>
+                  <th>PDU Session IP</th>
+                </tr>
+              </thead>
+              <tbody id="topologyBody"></tbody>
+            </table>
+          </div>
+
+          <details class="details">
+            <summary>Raw (debug)</summary>
+            <pre id="topologyRaw" class="pre small"></pre>
+          </details>
+        </div>
+      </section>
+
+      <!-- Transport -->
+      <section class="tab hidden" id="tab-transport">
+        <h2>Transport</h2>
+        <div class="card">
+          <div class="row">
+            <button id="btnNatOn">NAT ON</button>
+            <button id="btnNatOff" class="secondary">NAT OFF</button>
+            <button id="btnTransportStatus" class="secondary">Status</button>
+          </div>
+          <pre id="transportOut" class="pre small"></pre>
+          <p class="hint">
+            Transport control may require passwordless sudo for <code>scripts/transport.sh</code>.
+          </p>
+        </div>
+      </section>
+
+      <!-- Control -->
+      <section class="tab hidden" id="tab-control">
+        <h2>Control</h2>
+        <div class="card">
+          <h3>Restart service</h3>
+          <div class="row">
+            <select id="restartService">
+              <option value="all">all</option>
+              <option value="amf">amf</option>
+              <option value="nrf">nrf</option>
+              <option value="nssf">nssf</option>
+              <option value="smf1">smf1</option>
+              <option value="smf2">smf2</option>
+              <option value="smf3">smf3</option>
+              <option value="upf1">upf1</option>
+              <option value="upf2">upf2</option>
+              <option value="upf3">upf3</option>
+              <option value="gnb">gnb</option>
+              <option value="ue1">ue1</option>
+              <option value="ue2">ue2</option>
+              <option value="ue3">ue3</option>
+              <option value="webui">webui</option>
+            </select>
+            <button id="btnRestart">Restart</button>
+          </div>
+          <pre id="restartOut" class="pre small"></pre>
+
+          <div class="row">
+            <button id="btnStart" class="secondary">Start network</button>
+            <button id="btnStop" class="secondary danger">Stop network</button>
+            <button id="btnStatus" class="secondary">Status</button>
+          </div>
+          <pre id="deploymentStatus" class="pre small"></pre>
+        </div>
+      </section>
+
+      <!-- Logs -->
+      <section class="tab hidden" id="tab-logs">
+        <h2>Logs</h2>
+        <div class="card">
+          <div class="row">
+            <select id="logService">
+              <option value="amf">amf</option>
+              <option value="nrf">nrf</option>
+              <option value="nssf">nssf</option>
+              <option value="smf1">smf1</option>
+              <option value="smf2">smf2</option>
+              <option value="smf3">smf3</option>
+              <option value="upf1">upf1</option>
+              <option value="upf2">upf2</option>
+              <option value="upf3">upf3</option>
+              <option value="gnb">gnb</option>
+              <option value="ue1">ue1</option>
+              <option value="ue2">ue2</option>
+              <option value="ue3">ue3</option>
+              <option value="webui">webui</option>
+            </select>
+            <button id="btnLogs">Fetch</button>
+            <label class="chk"><input id="logFollow" type="checkbox"/> follow (stream)</label>
+          </div>
+          <pre id="logsOut" class="pre"></pre>
+        </div>
+      </section>
+
+    </section>
+  </main>
+
+  <script src="./app.js"></script>
+</body>
+</html>
